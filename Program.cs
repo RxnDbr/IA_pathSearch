@@ -199,25 +199,6 @@ namespace IA_projet_p1
             lDest.Add(W);
 
             Application.Run(new Form3(lDest));
-            /*   This
-  means
-that in our search, having fixed
-t
-1
-and
-t
-2
-, the possibilities for
-t
-3
-can be limited to those
-cities that are closer to
-t
-2
-than is
-t
-1
-. */
         }
     }
 }

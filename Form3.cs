@@ -70,8 +70,9 @@ namespace IA_projet_p1
                 heuristique += mst[i].Item2;
             }
 
-            List<Tuple<List<GenericNode>, double>> bfg = g.BFG(LTousChemins);
-            Tuple<List<GenericNode>, double> sommeChemins = g.concateneChemins(bfg);
+            List<Tuple<List<GenericNode>, double>> bestFirst_segmente = g.BFG(LTousChemins);
+            Tuple<List<GenericNode>, double> best_first_ensemble = g.concateneChemins(bestFirst_segmente);
+            Tuple<List<GenericNode>, double> chemin_optim = g.deuxOpt(best_first_ensemble, LTousChemins);
         }
 
 

@@ -300,6 +300,104 @@ namespace IA_projet_p1
             return L_explores;
         }
 
+        public Tuple<List<GenericNode>, double> deuxOpt(Tuple<List<GenericNode>, double> cheminInitial,Tuple<List<GenericNode>, double>[][] LtoutesPos )
+        {
+            
+            //init
+            int ind_t1_ch = 0;
+            int ind_t2_ch = ind_t1_ch+1;
+
+            GenericNode t1 = cheminInitial.Item1[ind_t1_ch];
+            GenericNode t2 = cheminInitial.Item1[ind_t2_ch];
+
+            List<GenericNode> echanges_possibles = a_echanger(t1, t2, cheminInitial.Item1, LtoutesPos);
+
+            GenericNode ta = echanges_possibles[0];
+            int ind_ta_ch = cheminInitial.Item1.IndexOf(ta);
+            int ind_tb_ch = ind_ta_ch+1;
+            GenericNode tb = cheminInitial.Item1[ind_tb_ch];
+
+            int ind_t1_mat;
+            int ind_t2_mat;
+            int ind_ta_mat;
+            int ind_tb_mat;
+
+            double cout1;
+            double cout2;
+
+            double prop_cout;
+
+
+            Tuple<List<GenericNode>, double> nxChemin = Tuple.Create(new List<GenericNode>(cheminInitial.Item1), cheminInitial.Item2);
+
+            while (echanges_possibles.Count() > 0 && ind_t1_ch< nxChemin.Item1.Count - 4)
+            {
+
+                //place dans la matrice de couts totaux
+                ind_t1_mat = trouverIndice(t1, LtoutesPos);
+                ind_t2_mat = trouverIndice(t2, LtoutesPos);
+                ind_ta_mat = trouverIndice(ta, LtoutesPos);
+                ind_tb_mat = trouverIndice(tb, LtoutesPos);
+
+                //calcule la différence de cout avec et sans intersection 
+                cout1 = LtoutesPos[ind_t1_mat][ind_t2_mat].Item2 + LtoutesPos[ind_ta_mat][ind_tb_mat].Item2;
+                cout2 = LtoutesPos[ind_t1_mat][ind_ta_mat].Item2 + LtoutesPos[ind_t2_mat][ind_tb_mat].Item2;
+
+                //si le cout1 est plus élevé, c'est que l'intersection est là et donc que le chemin n'est pas optimal
+                //il faut alors inverser t2 et ta
+                if (cout1 > cout2)
+                {
+                    List<GenericNode> prop_chemin = new List<GenericNode>();
+
+                    int i;
+                    for (i = 0; i <= ind_t1_ch; i++) //le chemin et le cout restent les memes
+                    {
+                        prop_chemin.Add(cheminInitial.Item1[i]);
+                    }
+                    for (i = ind_ta_ch; i >= ind_t2_ch; i--) //inverse chemin et calc nouveau cout
+                    {
+                        prop_chemin.Add(cheminInitial.Item1[i]);
+                    }
+                    for (i = ind_tb_ch; i < cheminInitial.Item1.Count(); i++) //chemins et couts restent les mêmes
+                    {
+                        prop_chemin.Add(cheminInitial.Item1[i]);
+                    }
+
+                    prop_cout = cheminInitial.Item2 + (cout1 - cout2);
+
+                    nxChemin = Tuple.Create(prop_chemin, prop_cout);
+                    //il faut reconstruire les nouvelles possibilités
+                    echanges_possibles = a_echanger(t1, ta, prop_chemin, LtoutesPos);
+                }
+
+                else
+                {
+                    echanges_possibles.Remove(ta);
+                }
+
+                //ne regarde solutions suivante que si au moins 4 noeuds suivant 
+                while (echanges_possibles.Count() == 0 && ind_t1_ch < nxChemin.Item1.Count - 4)
+                {
+                    t1 = nxChemin.Item1[ind_t1_ch + 1];
+                    t2 = nxChemin.Item1[ind_t1_ch + 2];
+                    echanges_possibles = a_echanger(t1, t2, nxChemin.Item1, LtoutesPos);
+                }
+
+                //prend le premier élmt, au hasard, de 
+                ta = echanges_possibles[0];
+                //trouver place de ta dans le chemin initial
+
+                //place dans le chemin
+                ind_t1_ch = nxChemin.Item1.IndexOf(t1);
+                ind_t2_ch = ind_t1_ch + 1;
+                ind_ta_ch = nxChemin.Item1.IndexOf(ta);
+                ind_tb_ch = ind_ta_ch + 1;
+                tb = nxChemin.Item1[ind_tb_ch];
+            }
+            return nxChemin;
+
+        }
+
         public Tuple<List<GenericNode>, double> concateneChemins(List<Tuple<List<GenericNode>, double>> bfg)
         {
             double coutTot = 0.0;
@@ -318,6 +416,49 @@ namespace IA_projet_p1
             Tuple<List<GenericNode>, double> cheminFinal = Tuple.Create(pointsParcours, coutTot);
             return cheminFinal; 
         }
+
+
+
+        public List<GenericNode> a_echanger(GenericNode t1, GenericNode t2,List<GenericNode> routeActuelle, 
+            Tuple<List<GenericNode>, double>[][] LtoutesPos)
+        {
+            //retourne la liste de toutes les permutations susceptibles d'être intéressantes
+
+            List<GenericNode> L_echangesPossibles = new List<GenericNode>();
+            //trouver les indices
+            int ind_t1_mat = trouverIndice(t1, LtoutesPos);
+            int ind_t2_mat = trouverIndice(t2, LtoutesPos);
+
+            //chercher tous les noeuds plus proches de t1 que de t2
+            for (int i = 0; i < routeActuelle.Count(); i++)
+            {
+                if (i > ind_t2_ch) //ECRIRE TROUVER INDICE PLUS EFFICACE QUE INDEXOF POUR TROUVER LE PREMIER ELMT ???
+                {
+                    int indiceI = trouverIndice(routeActuelle[i], LtoutesPos);
+                    //on va essayer d'échanger les routes qui sont plus proches de t1 que de t2
+                    if (LtoutesPos[ind_t1_mat][indiceI].Item2 < LtoutesPos[ind_t2_mat][indiceI].Item2 &&
+                        !(routeActuelle[i].Equals(t1)) &&
+                        !(routeActuelle[i].Equals(t2)))
+                    {
+                        L_echangesPossibles.Add(routeActuelle[i]);
+                    }
+                }
+            }
+            return L_echangesPossibles;
+        }
+
+        public int trouverIndice(GenericNode a_trouver, Tuple<List<GenericNode>, double>[][] LtoutesPos)
+        {
+            for (int i = 0; i < LtoutesPos[0].Count() ; i++)
+            {
+                if (LtoutesPos[i][0].Item1[0].GetNom().Equals(a_trouver.GetNom()))
+                {
+                    return i;
+                }
+            }
+            return -1; //if error
+        }
+
     
     }
 }
