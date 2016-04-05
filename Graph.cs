@@ -401,14 +401,11 @@ namespace IA_projet_p1
         public Tuple<List<GenericNode>, double> concateneChemins(List<Tuple<List<GenericNode>, double>> bfg)
         {
             double coutTot = 0.0;
-            List<GenericNode> pointsParcours = new List<GenericNode>();
+            List<GenericNode> pointsParcours = new List<GenericNode> {bfg[0].Item1[0]};
             foreach (Tuple<List<GenericNode>, double> bout in bfg)
             {
                 List<GenericNode> boutSans1er = new List<GenericNode> (bout.Item1);
-                if (!(bout.Equals(bfg.First())))
-                {
-                    boutSans1er.Remove(bout.Item1.First());
-                }
+                boutSans1er.Remove(boutSans1er[0]);
                 pointsParcours.AddRange(boutSans1er as IEnumerable<GenericNode>);
                 
                 coutTot += bout.Item2;
@@ -428,17 +425,26 @@ namespace IA_projet_p1
             //trouver les indices
             int ind_t1_mat = trouverIndice(t1, LtoutesPos);
             int ind_t2_mat = trouverIndice(t2, LtoutesPos);
-
+            int ind_t1_ch = -1;
+            int ind_t2_ch = -2;
+            //il peut y avoir plusieurs passage par t1 et/ou t2, dans ce cas, il faut chercher quand sont il voisins
+            for(int i=0; i<routeActuelle.Count-1; i++)
+            {
+                if (routeActuelle[i].Equals(t1) && routeActuelle[i+1].Equals(t2))
+                {
+                    ind_t1_ch = i;
+                    ind_t2_ch = i+1;
+                }
+            }
+            
             //chercher tous les noeuds plus proches de t1 que de t2
             for (int i = 0; i < routeActuelle.Count(); i++)
             {
                 if (i > ind_t2_ch) //ECRIRE TROUVER INDICE PLUS EFFICACE QUE INDEXOF POUR TROUVER LE PREMIER ELMT ???
                 {
-                    int indiceI = trouverIndice(routeActuelle[i], LtoutesPos);
+                    int indiceI_mat = trouverIndice(routeActuelle[i], LtoutesPos);
                     //on va essayer d'échanger les routes qui sont plus proches de t1 que de t2
-                    if (LtoutesPos[ind_t1_mat][indiceI].Item2 < LtoutesPos[ind_t2_mat][indiceI].Item2 &&
-                        !(routeActuelle[i].Equals(t1)) &&
-                        !(routeActuelle[i].Equals(t2)))
+                    if (LtoutesPos[ind_t1_mat][indiceI_mat].Item2 < LtoutesPos[ind_t2_mat][indiceI_mat].Item2) //tout n'est pas dans la matrice !
                     {
                         L_echangesPossibles.Add(routeActuelle[i]);
                     }
