@@ -13,10 +13,14 @@ namespace IA_projet_p1
     {
         public List<Destination> lDest;
         public List<CheckBox> lCheckBox;
+        public List<GraphNode> lNoeuds;
+        public Tuple<List<GenericNode>, double>[][] lTousChemins;
+        Graph g;
 
         public Form3(List<Destination> _lDest)
         {
             lDest = _lDest;
+            g = new Graph();
             InitializeComponent();
             lCheckBox = new List<CheckBox> {
                 cb_a,cb_b,cb_c,cb_d,cb_e,
@@ -24,6 +28,12 @@ namespace IA_projet_p1
                 cb_k,cb_l,cb_m,cb_n,cb_o,
                 cb_p,cb_q,cb_r,cb_s,cb_t,
                 cb_u,cb_v,cb_w};
+            lNoeuds = new List<GraphNode>();
+            foreach (Destination d in lDest)
+            {
+                lNoeuds.Add(new GraphNode(d));
+            }
+            lTousChemins = g.retourneTousChemins(lNoeuds);
         }
 
         private void Form3_Load(object sender, EventArgs e)
@@ -36,7 +46,6 @@ namespace IA_projet_p1
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Graph g = new Graph();
             GraphNode N0 = new GraphNode(lDest[0]);
 
             List<string> lChecked = new List<string>();
@@ -59,10 +68,13 @@ namespace IA_projet_p1
                 }
             }
             //Il faut calculer le cout de toutes les liaisons possibles dans les Lpassage
+            //LTousChemins est une matrice carrée et symétrique contenant toutes les possibilités de liaisons possibles
+            //C'est un tupe ayant pour item 1 la manière la plus rapide d'arriver d'aller du point de départ au point d'arrivé
+            //Et ayant pour deuxieme item le cout de ce trajet
+            Tuple<List<GenericNode>, double>[][] LTousPassages = g.retourneTousChemins(LPassage);
 
-            Tuple<List<GenericNode>, double>[][] LTousChemins = g.retourneTousChemins(LPassage);
-
-            Tuple<List<GenericNode>, double>[] mst = g.MST(LTousChemins);
+            //Le minimum spanning tree
+            Tuple<List<GenericNode>, double>[] mst = g.MST(LTousPassages);
 
             double heuristique = 0;
             for (int i = 0; i < mst.Count(); i++)
@@ -70,9 +82,31 @@ namespace IA_projet_p1
                 heuristique += mst[i].Item2;
             }
 
-            List<Tuple<List<GenericNode>, double>> bestFirst_segmente = g.BFG(LTousChemins);
-            Tuple<List<GenericNode>, double> best_first_ensemble = g.concateneChemins(bestFirst_segmente);
-            Tuple<List<GenericNode>, double> chemin_optim = g.deuxOpt(best_first_ensemble, LTousChemins);
+            //On génère un premier chemin grace au best first search qui servira de base 
+            //Le chemin généré va du plus proche au plus proche
+            //Cet algo a l'avantage d'etre extrement rapide car il n'explore qu'une toute petite partie de l'arbre
+            //et n'est pas trop mauvais dans l'ensemble, surtout dans où le chemin fait une boucle
+
+            Tuple<List<GenericNode>, double> chemin_alpha = g.genereCheminAlpha(LTousPassages);
+            
+            //bestFirst_segmente donne la liste des différents noeuds à parcourir séparement
+            List<Tuple<List<GenericNode>, double>> best_first_segmente = g.BFS(LTousPassages);
+            //best_first_ensemble assemble les différents segments pour ne donner plus qu'une liste avec tous les points où passer
+            Tuple<List<GenericNode>, double> best_first_ensemble = g.concateneChemins(best_first_segmente);
+
+            //chemin_ordonne assemble les différents segments pour ne donner plus qu'une liste des points de collecte ordonnée où passer
+            Tuple<List<GenericNode>, double> chemin_ordonne = g.ordrePointsPassage(best_first_segmente);
+
+            //2 opt va prendre en entrée le chemin déjà ordonné et teste toutes les permutations qui semblent pertinentes
+
+            Tuple<List<GenericNode>, double> chemin_par2opt = g.deuxOpt(chemin_ordonne, LTousPassages);
+
+            Tuple<List<GenericNode>, double> chemin2_par2opt = g.deuxOpt(chemin_alpha, LTousPassages);
+
+            Tuple<List<GenericNode>, double> chemin3_par2opt = g.deuxOpt(best_first_ensemble, lTousChemins);
+
+
+
         }
 
 
